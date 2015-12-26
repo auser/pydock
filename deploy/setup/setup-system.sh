@@ -8,12 +8,11 @@ set -xe
 OPENCV_VER=3.0.0
 OPENCV_CONTRIB_VER="${OPENCV_VER}"
 OPENCV_INSTALL_PREFIX="/opt/opencv"
+PYENV_ROOT=${PYENV_ROOT:-$HOME/.pyenv}
+PYENV_SHIMS=$PYENV_ROOT/shims
+PATH=$PATH:$PYENV_ROOT/bin
 
-# PYENV_ROOT=${PYENV_ROOT:-$HOME/.pyenv}
-# PYENV_SHIMS=$PYENV_ROOT/shims
-# PATH=$PATH:$PYENV_ROOT/bin
-
-# sudo -H $PYENV_SHIMS/pip install --upgrade pip
+sudo -H $PYENV_SHIMS/pip install --upgrade pip
 
 function setup_jupyter() {
 	_python=$1
@@ -81,20 +80,18 @@ function install_pip_packages() {
     INSTALL="$PYENV_SHIMS/conda install -y"
     PIP_INSTALL="$PYENV_SHIMS/pip install"
 
-    $PYENV_SHIMS/conda update -y pip
     $PYENV_SHIMS/conda create -n py3 python=3*
     $PYENV_SHIMS/conda create -n py2 python=2*
 
     $INSTALL ipython jupyter ipyparallel
-    $INSTALL opencv
     $INSTALL Cython hdf5
     $INSTALL numpy scipy
     $INSTALL h5py
+    $INSTALL scikit-image scikit-learn
+    $INSTALL pandas matplotlib seaborn
     $PIP_INSTALL keras
-    $PIP_INSTALL sklearn scikit-image
-    $PIP_INSTALL pandas matplotlib seaborn
 }
 
-install_pip_packages
+# install_pip_packages
 setup_jupyter python "Python"
 install_opencv

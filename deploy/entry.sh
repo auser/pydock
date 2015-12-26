@@ -14,5 +14,5 @@ adduser "${USER_LOGIN}" compute-users
 
 HOME="${USER_HOME_DIR}" \
     sudo -E -u "${USER_LOGIN}" \
-	  ${CMD:-bash --login \
+	  ${CMD:-/bin/bash --login \
                 -c "jupyter notebook --no-browser --ip=0.0.0.0"}

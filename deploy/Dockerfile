@@ -41,30 +41,36 @@ RUN chown -R root:root /etc/sudoers.d && \
     chmod 0440 /etc/sudoers.d/*
 
 ENV USER_GID compute-users
-ENV MINICONDA_ROOT /usr/local/conda
-# ENV PYENV_ROOT /usr/local/pyenv
+ENV PYENV_ROOT /usr/local/pyenv
 
 RUN addgroup $USER_GID
 
-RUN curl -LO http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh
-RUN bash Miniconda-latest-Linux-x86_64.sh -p $MINICONDA_ROOT -b
-RUN rm Miniconda-latest-Linux-x86_64.sh
-ENV PATH=$MINICONDA_ROOT/bin:${PATH}
-RUN conda update -y conda
-
 # PyENV
-# RUN git clone git://github.com/yyuu/pyenv.git $PYENV_ROOT
+RUN git clone git://github.com/yyuu/pyenv.git $PYENV_ROOT
 
-# RUN chmod 777 $PYENV_ROOT
-# ENV PYENV_EXEC $PYENV_ROOT/bin/pyenv
+RUN chmod 777 $PYENV_ROOT
+ENV PYENV_EXEC $PYENV_ROOT/bin/pyenv
+
+ENV CONDA_EXEC $PYENV_ROOT/shims/conda
+ENV PIP_EXEC $PYENV_ROOT/shims/pip
 
 # ENV PYTHON_VERSION 2.7.10
-# ENV PYTHON_VERSION miniconda3-3.18.3
-#anaconda3-2.4.0
+ENV PYTHON_VERSION miniconda3-3.18.3
+#anaconda3-2.4insta.0
 
-# RUN $PYENV_EXEC install $PYTHON_VERSION
-# RUN $PYENV_EXEC global $PYTHON_VERSION
-# RUN $PYENV_EXEC rehash
+RUN $PYENV_EXEC install $PYTHON_VERSION
+RUN $PYENV_EXEC global $PYTHON_VERSION
+RUN $PYENV_EXEC rehash
+
+RUN $CONDA_EXEC create -n py3 python=3*
+RUN $CONDA_EXEC create -n py2 python=2.7*
+
+RUN $CONDA_EXEC install -y ipython jupyter ipyparallel \
+                   Cython hdf5 numpy scipy \
+                   h5py scikit-image scikit-learn \
+                   pandas matplotlib seaborn
+
+RUN $PIP_EXEC install keras
 
 ADD setup /tmp/setup
 RUN cd /tmp/setup && ./setup-system.sh && rm -r /tmp/setup
