@@ -1,0 +1,5 @@
+core:
+  build: deploy
+  ports:
+    - 8888:8888
+
