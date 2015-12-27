@@ -2,4 +2,10 @@ core:
   build: deploy
   ports:
     - 8888:8888
+  volumes_from:
+    - data
 
+data:
+  image: busybox
+  volumes:
+    - /home/compute/notebooks

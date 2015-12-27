@@ -36,12 +36,7 @@ RUN apt-get install -yq libssl-dev zlib1g-dev \
 
 RUN apt-get install -yq gfortran qt5-default
 
-ADD system-conf /
-RUN chown -R root:root /etc/sudoers.d && \
-    chmod 0440 /etc/sudoers.d/*
-
 ENV USER_GID compute-users
-ENV PYENV_ROOT /usr/local/pyenv
 
 RUN addgroup $USER_GID
 
@@ -50,16 +45,19 @@ RUN curl -LO http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh
 RUN bash Miniconda-latest-Linux-x86_64.sh -p /miniconda -b
 RUN rm Miniconda-latest-Linux-x86_64.sh
 
+ADD system-conf /
+RUN chown -R root:root /etc/sudoers.d && \
+    chmod 0440 /etc/sudoers.d/*
+
 ENV PATH /miniconda/bin:${PATH}
 ENV CONDA_EXEC conda
 ENV PIP_EXEC pip
-
-ADD setup /tmp/setup
 
 RUN $CONDA_EXEC update -y conda
 RUN $CONDA_EXEC create -y -n py2 python=2*
 RUN $CONDA_EXEC create -y -n py3 python=3*
 
+ADD setup /tmp/setup
 RUN /tmp/setup/setup-jupyter-kernels.sh
 
 RUN /bin/bash -c "source activate py3"
@@ -73,6 +71,8 @@ RUN /bin/bash -c "source activate py3"
 # RUN $CONDA_EXEC install -y -c https://conda.anaconda.org/menpo opencv
 
 EXPOSE 8888
+
+VOLUME /home/compute/notebooks
 
 ADD entry.sh /opt/compute-container/entry.sh
 RUN chmod u+x /opt/compute-container/entry.sh

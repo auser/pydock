@@ -30,5 +30,5 @@ EOI
 	  rm -r "${_ktmp}"
 }
 
-setup_jupyter py2 "Python 2" opencv
-setup_jupyter py3 "Python 3" opencv3
+setup_jupyter py2 "Python2 with OpenCV" opencv
+setup_jupyter py3 "Python3 with OpenCV3" opencv3
