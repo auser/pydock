@@ -34,7 +34,7 @@ RUN apt-get install -yq libssl-dev zlib1g-dev \
                 libbz2-dev \
                 libreadline-dev libsqlite3-dev libncurses5-dev
 
-RUN apt-get install -yq gfortran
+RUN apt-get install -yq gfortran qt5-default
 
 ADD system-conf /
 RUN chown -R root:root /etc/sudoers.d && \
@@ -45,39 +45,34 @@ ENV PYENV_ROOT /usr/local/pyenv
 
 RUN addgroup $USER_GID
 
-# PyENV
-RUN git clone git://github.com/yyuu/pyenv.git $PYENV_ROOT
+# Install miniconda to /miniconda
+RUN curl -LO http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh
+RUN bash Miniconda-latest-Linux-x86_64.sh -p /miniconda -b
+RUN rm Miniconda-latest-Linux-x86_64.sh
 
-RUN chmod 777 $PYENV_ROOT
-ENV PYENV_EXEC $PYENV_ROOT/bin/pyenv
-
-ENV CONDA_EXEC $PYENV_ROOT/shims/conda
-ENV PIP_EXEC $PYENV_ROOT/shims/pip
-
-# ENV PYTHON_VERSION 2.7.10
-ENV PYTHON_VERSION miniconda3-3.18.3
-#anaconda3-2.4insta.0
-
-RUN $PYENV_EXEC install $PYTHON_VERSION
-RUN $PYENV_EXEC global $PYTHON_VERSION
-RUN $PYENV_EXEC rehash
-
-RUN $CONDA_EXEC create -n py3 python=3*
-RUN $CONDA_EXEC create -n py2 python=2.7*
-
-RUN $CONDA_EXEC install -y ipython jupyter ipyparallel \
-                   Cython hdf5 numpy scipy \
-                   h5py scikit-image scikit-learn \
-                   pandas matplotlib seaborn
-
-RUN $PIP_EXEC install keras
+ENV PATH /miniconda/bin:${PATH}
+ENV CONDA_EXEC conda
+ENV PIP_EXEC pip
 
 ADD setup /tmp/setup
-RUN cd /tmp/setup && ./setup-system.sh && rm -r /tmp/setup
+
+RUN $CONDA_EXEC update -y conda
+RUN $CONDA_EXEC create -y -n py2 python=2*
+RUN $CONDA_EXEC create -y -n py3 python=3*
+
+RUN /tmp/setup/setup-jupyter-kernels.sh
+
+RUN /bin/bash -c "source activate py3"
+
+# RUN $CONDA_EXEC install -y ipython jupyter ipyparallel \
+#                    Cython hdf5 numpy scipy \
+#                    h5py scikit-image scikit-learn \
+#                    pandas matplotlib seaborn
+
+# RUN $PIP_EXEC install keras
+# RUN $CONDA_EXEC install -y -c https://conda.anaconda.org/menpo opencv
 
 EXPOSE 8888
-
-RUN ls -la $HOME
 
 ADD entry.sh /opt/compute-container/entry.sh
 RUN chmod u+x /opt/compute-container/entry.sh

@@ -8,6 +8,7 @@ set -xe
 OPENCV_VER=3.0.0
 OPENCV_CONTRIB_VER="${OPENCV_VER}"
 OPENCV_INSTALL_PREFIX="/opt/opencv"
+OPENCV_WORKDIR=${OPENCV_WORKDIR:-/tmp/opencv}
 PYENV_ROOT=${PYENV_ROOT:-$HOME/.pyenv}
 PYENV_SHIMS=$PYENV_ROOT/shims
 PATH=$PATH:$PYENV_ROOT/bin
@@ -39,13 +40,13 @@ function install_opencv() {
 	echo "Installing OpenCV..."
 
 	# Create download directory
-	OPENCV_WORKDIR="$(mktemp -d --tmpdir opencv-compile.XXXXXX)"
+	# OPENCV_WORKDIR="$(mktemp -d --tmpdir opencv-compile.XXXXXX)"
 	cd "${OPENCV_WORKDIR}"
 
 	# Download and extract OpenCV and OpenCV contrib modules
-	echo "Dowloading and extracting OpenCV..."
-	curl -L https://github.com/Itseez/opencv/archive/${OPENCV_VER}.tar.gz | tar xz
-	curl -L https://github.com/Itseez/opencv_contrib/archive/${OPENCV_CONTRIB_VER}.tar.gz | tar xz
+	# echo "Dowloading and extracting OpenCV..."
+	# curl -L https://github.com/Itseez/opencv/archive/${OPENCV_VER}.tar.gz | tar xz
+	# curl -L https://github.com/Itseez/opencv_contrib/archive/${OPENCV_CONTRIB_VER}.tar.gz | tar xz
 
 	echo "Compiling OpenCV..."
 	OPENCV_CONTRIB_MODULES=${OPENCV_WORKDIR}/opencv_contrib-${OPENCV_CONTRIB_VER}/modules
@@ -60,7 +61,8 @@ function install_opencv() {
     -DWITH_QT=ON -DWITH_OPENGL=ON \
 		..
 
-	make -j8 && make install
+	make -j4 && make install
+  ldconfig
 
 	# Add OpenCV to profile
 	cat >>/etc/profile.d/opencv.sh <<EOI

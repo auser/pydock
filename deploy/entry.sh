@@ -9,10 +9,9 @@ echo "Creating user ${USER_LOGIN} (${USER_UID}:${USER_GID})..."
 adduser --disabled-password \
         --home "${USER_HOME_DIR}" \
         --uid "${USER_UID}" \
-        --gecos "${USER_FULL_NAME},,," "${USER_LOGIN}"
+        --gecos "${USER_FULL_NAME},,," "${USER_LOGIN}" >/dev/null
 adduser "${USER_LOGIN}" compute-users
 
-HOME="${USER_HOME_DIR}" \
-    sudo -E -u "${USER_LOGIN}" \
-	  ${CMD:-/bin/bash --login \
-                -c "jupyter notebook --no-browser --ip=0.0.0.0"}
+cd "${USER_HOME_DIR}"
+SUDO="sudo"
+HOME="${USER_HOME_DIR}" $SUDO -E -u "${USER_LOGIN}" ${CMD:-/bin/bash --login -c "jupyter notebook --no-browser --ip=0.0.0.0"}
