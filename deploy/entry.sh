@@ -18,7 +18,7 @@ mkdir -p -m 700 ${IPYTHON_DIR}/security
 mkdir -p -m 700 ${NOTEBOOK_DIR}
 
 echo "Creating user ${USER_LOGIN} (${USER_UID}:${USER_GID})..."
-adduser --disabled-password \
+id -u $USER_LOGIN &>/dev/null || adduser --disabled-password \
         --home "${USER_DIR}" \
         --uid "${USER_UID}" \
         --gecos "${USER_FULL_NAME},,," "${USER_LOGIN}" >/dev/null
@@ -34,6 +34,9 @@ chown -R $USER_LOGIN:compute-users $USER_DIR
 echo $PASSWORD > $PASSWORD_FILE
 
 cat<<EOF | sudo tee ${CONF_FILE}
+import os
+os.environ['SHELL'] = '/bin/bash'
+
 c = get_config()
 c.NotebookApp.ip = '0.0.0.0'
 c.NotebookApp.port = 8888
@@ -48,7 +51,9 @@ with open('${PASSWORD_FILE}', 'r') as fp:
     p = fp.read().strip()
 c.NotebookApp.password = passwd(p)
 c.IPKernelApp.pylab = 'inline'
-c.NotebookManager.notebook_dir = u'${NOTEBOOK_DIR}'
+c.InteractiveShellApp.matplotlib = 'inline'
+c.IPKernelApp.matplotlib = 'inline'
+c.NotebookApp.notebook_dir = os.path.expanduser('~/notebooks/')
 EOF
 
 SUDO="sudo"
