@@ -60,7 +60,7 @@ RUN $CONDA_EXEC create -y -n py3 python=3*
 ADD setup /tmp/setup
 RUN /tmp/setup/setup-jupyter-kernels.sh
 
-RUN /bin/bash -c "source activate py3"
+RUN /bin/bash -c "source activate py2"
 
 # RUN $CONDA_EXEC install -y ipython jupyter ipyparallel \
 #                    Cython hdf5 numpy scipy \

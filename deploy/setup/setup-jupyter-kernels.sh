@@ -9,16 +9,25 @@ function setup_jupyter() {
 	  _spec_dir="${_ktmp}/$(basename ${_python})"
 	  echo "Setting up Jupyter for ${_python} in ${_spec_dir}"
 	  mkdir -p "${_spec_dir}"
+
+    source activate ${_python}
+    python_path=$( which python )
 	  cat >"${_spec_dir}/kernel.json" <<EOI
 {
 	"language": "python",
+	"codemirror_mode": {
+		"version": 3,
+		"name": "ipython"
+	},
 	"display_name": "${_name}",
 	"argv": [
-		"${_python}", "-m", "ipykernel", "-f", "{connection_file}"
+		"${python_path}",
+		"-c", "from IPython.kernel.zmq.kernelapp import main; main()",
+		"-f", "{connection_file}"
 	]
 }
 EOI
-    source activate ${_python}
+# "-m", "ipykernel",
     conda install -y notebook ipykernel jupyter ipyparallel \
           hdf5 numpy scipy h5py scikit-image scikit-learn \
           pandas matplotlib seaborn
