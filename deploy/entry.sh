@@ -45,7 +45,6 @@ c.NotebookApp.port_retries = 249
 c.NotebookApp.enable_mathjax = True
 c.NotebookApp.open_browser = False
 # c.NotebookApp.certfile = u'${JDIR}/security/ssl_${USER_LOGIN}.pem'
-# c.NotebookApp.JDIR = u'${JDIR}'
 
 from IPython.lib import passwd
 with open('${PASSWORD_FILE}', 'r') as fp:
@@ -68,7 +67,6 @@ c.InteractiveShell.xmode = 'Context'
 
 c.IPKernelApp.pylab = 'inline'
 c.InteractiveShellApp.matplotlib = 'inline'
-c.IPKernelApp.matplotlib = 'inline'
 c.NotebookApp.notebook_dir = os.path.expanduser('~/notebooks/')
 EOF
 
