@@ -54,8 +54,8 @@ ENV CONDA_EXEC conda
 ENV PIP_EXEC pip
 
 RUN $CONDA_EXEC update -y conda
-RUN $CONDA_EXEC create -y -n py2 python=2*
 RUN $CONDA_EXEC create -y -n py3 python=3*
+RUN $CONDA_EXEC create -y -n py2 python=2*
 
 ADD setup /tmp/setup
 RUN /tmp/setup/setup-jupyter-kernels.sh
@@ -77,4 +77,3 @@ VOLUME /home/compute/notebooks
 ADD entry.sh /opt/compute-container/entry.sh
 RUN chmod u+x /opt/compute-container/entry.sh
 CMD /opt/compute-container/entry.sh
-

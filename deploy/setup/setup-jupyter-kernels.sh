@@ -22,7 +22,7 @@ function setup_jupyter() {
 	"display_name": "${_name}",
 	"argv": [
 		"${python_path}",
-		"-c", "from IPython.kernel.zmq.kernelapp import main; main()",
+		"-m", "ipykernel",
 		"-f", "{connection_file}"
 	]
 }
