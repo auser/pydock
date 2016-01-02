@@ -1,21 +1,17 @@
 PREFIX=auser
 
-base:
-	cd deploy/base && docker build -t ${PREFIX}/base .
+up:
+	docker-compose -p pydock -d up
 
-pyenv:
-	cd deploy/pyenv && docker build -t ${PREFIX}/pyenv .
+down:
+	docker-compose -p pydock stop
 
-ipython:
-	cd deploy/ipython && docker build -t ${PREFIX}/ipython .
+backup:
+	docker run --volumes-from pydock_core_1 -v $(pwd):/backup busybox tar cvfz /backup/backup.tar.gz "/home/compute/notebooks"
 
-torch:
-	cd deploy/torch && docker build -t ${PREFIX}/torch .
+restore:
+  docker run --volumes-from pydock_core_1 -v $(pwd):/backup busybox bash -c "cd /home/compute/notebooks && tar xvf /backup/backup.tar.gz"
 
-opencv:
-	cd deploy/opencv && docker build -t ${PREFIX}/opencv .
-
-all: base pyenv ipython torch opencv
 
 clean:
 	docker-cleanup
