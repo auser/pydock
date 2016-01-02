@@ -1,16 +1,16 @@
 PREFIX=auser
 
 up:
-	docker-compose -p pydock -d up
+	docker-compose -p pydock up -d
 
 down:
 	docker-compose -p pydock stop
 
 backup:
-	docker run --volumes-from pydock_core_1 -v $(pwd):/backup busybox tar cvfz /backup/backup.tar.gz "/home/compute/notebooks"
+	docker run --volumes-from pydock_core_1 -v $(CURDIR):/backup ubuntu bash -c "cd /home/compute/notebooks && tar cvfz /backup/backup.tar.gz ."
 
 restore:
-  docker run --volumes-from pydock_core_1 -v $(pwd):/backup busybox bash -c "cd /home/compute/notebooks && tar xvf /backup/backup.tar.gz"
+	docker run --volumes-from pydock_core_1 -v $(CURDIR):/backup ubuntu bash -c "cd /home/compute && tar xvfz /backup/backup.tar.gz"
 
 
 clean:
