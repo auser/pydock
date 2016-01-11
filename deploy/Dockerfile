@@ -18,7 +18,7 @@ RUN apt-get -yq install libeigen3-dev ocl-icd-opencl-dev \
 	ant default-jdk javahelper texlive-fonts-extra texlive-latex-extra
 
 RUN apt-get -yq install build-essential cmake checkinstall \
-    vim git bash-completion sudo
+    vim git bash-completion sudo autoconf automake libtool wget
 
 RUN apt-get -yq install texlive-latex-recommended latex-xcolor texlive-fonts-recommended \
 	libgstreamer-plugins-base1.0-dev gstreamer1.0-libav libavresample-dev
@@ -35,6 +35,10 @@ RUN apt-get install -yq libssl-dev zlib1g-dev \
                 libreadline-dev libsqlite3-dev libncurses5-dev
 
 RUN apt-get install -yq gfortran qt5-default
+
+## Tesseract
+RUN apt-get install -yq liblog4cplus-dev imagemagick
+RUN apt-get install -yq tesseract-ocr libtesseract-dev libleptonica-dev
 
 ENV USER_GID compute-users
 
@@ -60,7 +64,11 @@ RUN $CONDA_EXEC create -y -n py2 python=2*
 ADD setup /tmp/setup
 RUN /tmp/setup/setup-jupyter-kernels.sh
 
+RUN chgrp compute-users -R /miniconda/envs
 RUN /bin/bash -c "source activate py2"
+
+ADD ./requirements.txt /
+RUN pip install -r /requirements.txt && rm /requirements.txt
 
 # RUN $CONDA_EXEC install -y ipython jupyter ipyparallel \
 #                    Cython hdf5 numpy scipy \
