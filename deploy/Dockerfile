@@ -67,8 +67,8 @@ RUN /tmp/setup/setup-jupyter-kernels.sh
 RUN chgrp compute-users -R /miniconda/envs
 RUN /bin/bash -c "source activate py2"
 
-ADD ./requirements.txt /
-RUN pip install -r /requirements.txt && rm /requirements.txt
+# ADD ./requirements.txt /
+# RUN pip install -r /requirements.txt && rm /requirements.txt
 
 # RUN $CONDA_EXEC install -y ipython jupyter ipyparallel \
 #                    Cython hdf5 numpy scipy \
@@ -78,8 +78,83 @@ RUN pip install -r /requirements.txt && rm /requirements.txt
 # RUN $PIP_EXEC install keras
 # RUN $CONDA_EXEC install -y -c https://conda.anaconda.org/menpo opencv
 
+## START Torch 
+WORKDIR /usr/local/src
+RUN apt-get install -y build-essential git libatlas-base-dev libopencv-dev python-opencv
+RUN git clone --recursive https://github.com/dmlc/mxnet
+RUN cd mxnet; make -j4
+
+## Torch kernel
+WORKDIR /usr/local/src
+RUN sudo apt-get install -y libzmq3-dev \
+             luarocks libssl-dev  cmake graphviz \
+             libqtgui4:amd64
+
+## From https://hub.docker.com/r/kaixhin/cuda-torch/~/dockerfile/
+# Run Torch7 installation scripts
+RUN curl -sk https://raw.githubusercontent.com/torch/ezinstall/master/install-deps | bash
+RUN git clone https://github.com/torch/distro.git /usr/local/torch --recursive
+RUN cd /usr/local/torch; ./install.sh
+
+# Set ~/torch as working directory
+WORKDIR /usr/local/torch
+
+# Export environment variables manually
+ENV LUA_PATH='/root/.luarocks/share/lua/5.1/?.lua;/root/.luarocks/share/lua/5.1/?/init.lua;/usr/local/torch/install/share/lua/5.1/?.lua;/usr/local/torch/install/share/lua/5.1/?/init.lua;./?.lua;/usr/local/torch/install/share/luajit-2.1.0-alpha/?.lua;/usr/local/share/lua/5.1/?.lua;/usr/local/share/lua/5.1/?/init.lua' \
+  LUA_CPATH='/root/.luarocks/lib/lua/5.1/?.so;/usr/local/torch/install/lib/lua/5.1/?.so;./?.so;/usr/local/lib/lua/5.1/?.so;/usr/local/lib/lua/5.1/loadall.so' \
+  PATH=/usr/local/torch/install/bin:$PATH \
+  LD_LIBRARY_PATH=/usr/local/torch/install/lib:$LD_LIBRARY_PATH \
+  DYLD_LIBRARY_PATH=/usr/local/torch/install/lib:$DYLD_LIBRARY_PATH
+
+# CMD ["/usr/local/torch/install/bin/th"]
+
+WORKDIR /usr/local/torch
+
+RUN cd /usr/local/torch && torch-activate && \
+    luarocks install lzmq && \
+    luarocks install penlight && \
+    luarocks install luafilesystem && \
+    luarocks install luacrypto
+
+#RUN /usr/bin/luarocks install qlua
+
+RUN git clone https://github.com/torch/graph.git /usr/local/torch/graph
+
+RUN cd /usr/local/torch/graph && torch-activate && \
+    /usr/local/torch/install/bin/luarocks make rocks/graph-scm-1.rockspec
+
+RUN git clone git://github.com/koraykv/torch-nngraph.git /usr/local/torch/nngraph
+RUN cd /usr/local/torch/nngraph && torch-activate && \
+    /usr/local/torch/install/bin/luarocks make
+
+# RUN git clone https://github.com/torch/cunn.git /usr/local/torch/cunn
+# RUN cd /usr/local/torch/cunn && torch-activate && \
+#     /usr/local/torch/install/bin/luarocks make rocks/cunn-scm-1.rockspec
+
+#RUN /usr/bin/luarocks install optim
+#RUN /usr/bin/luarocks install nn
+#RUN /usr/bin/luarocks install cltorch
+#RUN /usr/bin/luarocks install clnn
+
+RUN cd /usr/local/torch && torch-activate && \
+    /usr/local/torch/install/bin/luarocks install qtlua && \
+    /usr/local/torch/install/bin/luarocks install env
+    # /usr/local/torch/install/bin/luarocks install images && \
+    # /usr/local/torch/install/bin/luarocks install lua-cjson
+    # /usr/local/torch/install/bin/luarocks install uuid
+
+RUN echo "#!/bin/bash\nexport PATH=\$PATH:/usr/local/torch/install/bin\n/usr/local/torch/install/bin/torch-activate" > /etc/profile.d/torch.sh && \
+    chmod u+x /etc/profile.d/torch.sh
+
+RUN cd /usr/local/torch && git clone https://github.com/facebook/iTorch.git
+# CMD ["/usr/bin/luarocks make"]
+RUN cd /usr/local/torch/iTorch && torch-activate && \
+    env "PATH=$PATH" /usr/local/torch/install/bin/luarocks make
+## END torch
+
 EXPOSE 8888
 
+VOLUME /home/compute
 VOLUME /home/compute/notebooks
 
 ADD entry.sh /opt/compute-container/entry.sh

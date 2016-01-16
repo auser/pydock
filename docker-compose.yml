@@ -7,5 +7,6 @@ core:
 
 data:
   image: busybox
+  command: /bin/true
   volumes:
     - /home/compute/notebooks
