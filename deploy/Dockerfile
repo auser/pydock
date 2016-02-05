@@ -152,6 +152,11 @@ RUN cd /usr/local/torch/iTorch && torch-activate && \
     env "PATH=$PATH" /usr/local/torch/install/bin/luarocks make
 ## END torch
 
+## Install tensorflow
+RUN echo "#!/bin/bash\nsource activate py2\npip install --upgrade https://storage.googleapis.com/tensorflow/linux/cpu/tensorflow-0.6.0-cp27-none-linux_x86_64.whl --ignore-installed\necho \"Installed\"" > /tmp/setupTensorflow.sh && \
+chmod u+x /tmp/setupTensorflow.sh
+RUN /tmp/setupTensorflow.sh
+
 EXPOSE 8888
 
 VOLUME /home/compute
