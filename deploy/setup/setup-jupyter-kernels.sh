@@ -4,6 +4,7 @@ function setup_jupyter() {
 	  _python=$1
 	  _name=$2
     _opencv_name=$3
+    _pip_cmd=$(which pip)
 
 	  _ktmp=$(mktemp --tmpdir=/tmp -d kernelspecs-XXXXXXX)
 	  _spec_dir="${_ktmp}/$(basename ${_python})"
@@ -31,7 +32,9 @@ EOI
     conda install -y notebook ipykernel jupyter ipyparallel \
           hdf5 numpy scipy h5py scikit-image scikit-learn \
           pandas matplotlib seaborn
-    pip install keras
+    ${_pip_cmd} install keras
+
+    ${_pip_cmd} install --upgrade https://storage.googleapis.com/tensorflow/linux/cpu/tensorflow-0.6.0-cp27-none-linux_x86_64.whl --ignore-installed
 
     conda install -y -c https://conda.anaconda.org/menpo ${_opencv_name}
 
