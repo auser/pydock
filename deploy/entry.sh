@@ -80,4 +80,4 @@ chown -R $USER_LOGIN $(dirname $(ipython locate profile))
 
 # jupyter
 SUDO="sudo"
-HOME="${USER_DIR}" $SUDO -E -u "${USER_LOGIN}" ${CMD:-/bin/bash --login -c "jupyter notebook --config=${CONF_FILE}"}
+HOME="${USER_DIR}" $SUDO -E -u "${USER_LOGIN}" ${CMD:-/bin/bash --login -c "jupyter notebook --config=${CONF_FILE} --ip='*' --no-browser > jupyter.log 2>&1"}

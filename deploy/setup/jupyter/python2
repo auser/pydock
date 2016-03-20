@@ -1,0 +1,7 @@
+{
+	"language": "python",
+	"display_name": "${_name}",
+	"argv": [
+		"python", "-m", "ipykernel", "-f", "{connection_file}"
+	]
+}

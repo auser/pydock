@@ -1,119 +1,125 @@
-FROM ubuntu
+# Start with Ubuntu base image
+FROM ubuntu:14.04
 
-## https://github.com/rjw57/jupyter-container
+# Only do this once at the beginning
 
-# dependencies for Debian package).
-RUN apt-get -yq update
+RUN apt-get update
 
-RUN apt-get -yq install libgstreamer1.0-dev \
-	libavcodec-dev libavformat-dev libswscale-dev libgtk2.0-dev \
-	libgtkglext1-dev libgl1-mesa-dev libglu1-mesa-dev \
-  libjasper-dev libavutil-dev libswscale-dev
+# [ Caffe ]
+# From first half of https://github.com/Kaixhin/dockerfiles/blob/master/digits/Dockerfile
 
-RUN apt-get -yq install libjpeg-dev libpng-dev libtiff-dev libopenexr-dev libraw1394-dev libopencv-dev \
-	libdc1394-22-dev libv4l-dev v4l-utils \
-  zlib1g-dev liblapack-dev libtbb-dev
+# Install git, bc and dependencies
+RUN apt-get install -y \
+  git \
+  bc \
+  cmake \
+  libgflags-dev \
+  libgoogle-glog-dev \
+  libopencv-dev \
+  libleveldb-dev \
+  libsnappy-dev \
+  liblmdb-dev \
+  libhdf5-serial-dev \
+  libprotobuf-dev \
+  protobuf-compiler \
+  libatlas-base-dev \
+  python-dev \
+  python-pip \
+  python-numpy \
+  gfortran
 
-RUN apt-get -yq install libeigen3-dev ocl-icd-opencl-dev \
-	ant default-jdk javahelper texlive-fonts-extra texlive-latex-extra
+# Install boost
+RUN apt-get install -y --no-install-recommends libboost-all-dev
 
-RUN apt-get -yq install build-essential cmake checkinstall \
-    vim git bash-completion sudo autoconf automake libtool wget
+# Clone NVIDIA Caffe repo and move into it
+RUN cd /usr/local/ && git clone --branch caffe-0.14 https://github.com/NVIDIA/caffe.git && cd caffe && \
+# Install python dependencies
+  cat python/requirements.txt | xargs -n1 pip install && \
+# Make and move into build directory
+  mkdir build && cd build && \
+# CMake
+  cmake .. && \
+# Make
+  make -j"$(nproc)"
+# Set CAFFE_HOME
+ENV CAFFE_HOME /usr/local/caffe
+ENV PYTHONPATH /usr/local/caffe/python:$PYTHONPATH
 
-RUN apt-get -yq install texlive-latex-recommended latex-xcolor texlive-fonts-recommended \
-	libgstreamer-plugins-base1.0-dev gstreamer1.0-libav libavresample-dev
+# [ Theano ]
 
-RUN apt-get -yq install libavresample-dev llvm-dev llvm
+# Install build-essential, git, python-dev, pip and other dependencies
+RUN apt-get install -y \
+  build-essential \
+  git \
+  python-dev \
+  libopenblas-dev \ # this causes an error with Theano afaict
+  python-pip \
+  python-nose \
+  python-numpy \
+  python-scipy
 
-RUN apt-get -yq install libsnappy-dev liblmdb-dev \
-  libleveldb-dev libhdf5-dev libqt4-dev libgtk2.0-dev \
-  libopencore-amrwb-dev libtheora-dev libvorbis-dev \
-  libxvidcore-dev x264
+# Install bleeding-edge Theano
+RUN pip install --upgrade --no-deps git+git://github.com/Theano/Theano.git
 
-RUN apt-get install -yq libssl-dev zlib1g-dev \
-                libbz2-dev \
-                libreadline-dev libsqlite3-dev libncurses5-dev
+# [ Lasagne ]
 
-RUN apt-get install -yq gfortran qt5-default
+# Install bleeding-edge Lasagne
+RUN pip install --upgrade https://github.com/Lasagne/Lasagne/archive/master.zip
 
-## Tesseract
-RUN apt-get install -yq liblog4cplus-dev imagemagick
-RUN apt-get install -yq tesseract-ocr libtesseract-dev libleptonica-dev
+# [ Keras ]
 
-ENV USER_GID compute-users
+# Install dependencies
+RUN apt-get install -y \
+  libhdf5-dev \
+  python-h5py \
+  python-yaml
 
-RUN addgroup $USER_GID
+# Upgrade six
+RUN pip install --upgrade six
 
-# Install miniconda to /miniconda
-RUN curl -LO http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh
-RUN bash Miniconda-latest-Linux-x86_64.sh -p /miniconda -b
-RUN rm Miniconda-latest-Linux-x86_64.sh
+# Clone Keras repo and move into it
+RUN cd /usr/local && git clone https://github.com/fchollet/keras.git && cd keras && \
+  # Install
+  python setup.py install
 
-ADD system-conf /
-RUN chown -R root:root /etc/sudoers.d && \
-    chmod 0440 /etc/sudoers.d/*
+# Set ~/keras as working directory
+# WORKDIR /usr/local/keras
 
-ENV PATH /miniconda/bin:${PATH}
-ENV CONDA_EXEC conda
-ENV PIP_EXEC pip
+# [ Torch ]
 
-RUN $CONDA_EXEC update -y conda
-RUN $CONDA_EXEC create -y -n py3 python=3*
-RUN $CONDA_EXEC create -y -n py2 python=2*
+# Install curl and dependencies for iTorch
+RUN apt-get install -y \
+  curl \
+  ipython3 \
+  python-zmq \
+	software-properties-common
 
-ADD setup /tmp/setup
-RUN /tmp/setup/setup-jupyter-kernels.sh
-
-RUN chgrp compute-users -R /miniconda/envs
-RUN /bin/bash -c "source activate py2"
-
-# ADD ./requirements.txt /
-# RUN pip install -r /requirements.txt && rm /requirements.txt
-
-# RUN $CONDA_EXEC install -y ipython jupyter ipyparallel \
-#                    Cython hdf5 numpy scipy \
-#                    h5py scikit-image scikit-learn \
-#                    pandas matplotlib seaborn
-
-# RUN $PIP_EXEC install keras
-# RUN $CONDA_EXEC install -y -c https://conda.anaconda.org/menpo opencv
-
-## START Torch 
-WORKDIR /usr/local/src
-RUN apt-get install -y build-essential git libatlas-base-dev libopencv-dev python-opencv
-RUN git clone --recursive https://github.com/dmlc/mxnet
-RUN cd mxnet; make -j4
-
-## Torch kernel
-WORKDIR /usr/local/src
-RUN sudo apt-get install -y libzmq3-dev \
-             luarocks libssl-dev  cmake graphviz \
-             libqtgui4:amd64
-
-## From https://hub.docker.com/r/kaixhin/cuda-torch/~/dockerfile/
 # Run Torch7 installation scripts
 RUN curl -sk https://raw.githubusercontent.com/torch/ezinstall/master/install-deps | bash
 RUN git clone https://github.com/torch/distro.git /usr/local/torch --recursive
 RUN cd /usr/local/torch; ./install.sh
 
-# Set ~/torch as working directory
-WORKDIR /usr/local/torch
+# Set /usr/local/torch as working directory
+# WORKDIR /usr/local/torch
 
 # Export environment variables manually
-ENV LUA_PATH='/root/.luarocks/share/lua/5.1/?.lua;/root/.luarocks/share/lua/5.1/?/init.lua;/usr/local/torch/install/share/lua/5.1/?.lua;/usr/local/torch/install/share/lua/5.1/?/init.lua;./?.lua;/usr/local/torch/install/share/luajit-2.1.0-alpha/?.lua;/usr/local/share/lua/5.1/?.lua;/usr/local/share/lua/5.1/?/init.lua' \
-  LUA_CPATH='/root/.luarocks/lib/lua/5.1/?.so;/usr/local/torch/install/lib/lua/5.1/?.so;./?.so;/usr/local/lib/lua/5.1/?.so;/usr/local/lib/lua/5.1/loadall.so' \
+ENV LUA_PATH='/usr/local/.luarocks/share/lua/5.1/?.lua;/usr/local/.luarocks/share/lua/5.1/?/init.lua;/usr/local/torch/install/share/lua/5.1/?.lua;/usr/local/torch/install/share/lua/5.1/?/init.lua;./?.lua;/usr/local/torch/install/share/luajit-2.1.0-alpha/?.lua;/usr/local/share/lua/5.1/?.lua;/usr/local/share/lua/5.1/?/init.lua' \
+  LUA_CPATH='/usr/local/.luarocks/lib/lua/5.1/?.so;/usr/local/torch/install/lib/lua/5.1/?.so;./?.so;/usr/local/lib/lua/5.1/?.so;/usr/local/lib/lua/5.1/loadall.so' \
   PATH=/usr/local/torch/install/bin:$PATH \
-  LD_LIBRARY_PATH=/usr/local/torch/install/lib:$LD_LIBRARY_PATH \
+  LD_LIBRARY_PATH=/usr/local/torch/install/lib:/usr/local/include:$LD_LIBRARY_PATH \
   DYLD_LIBRARY_PATH=/usr/local/torch/install/lib:$DYLD_LIBRARY_PATH
 
-# CMD ["/usr/local/torch/install/bin/th"]
-
-WORKDIR /usr/local/torch
-
+RUN luarocks install loadcaffe
 RUN cd /usr/local/torch && torch-activate && \
     luarocks install lzmq && \
     luarocks install penlight && \
-    luarocks install luafilesystem && \
+    luarocks install luafilesystem
+
+# TODO: Move this above
+RUN apt-get install -yq libssl-dev libsslcommon2-dev
+
+RUN pwd && ls -l /usr/include | grep ssl
+RUN cd /usr/local/torch && torch-activate && \
     luarocks install luacrypto
 
 #RUN /usr/bin/luarocks install qlua
@@ -143,7 +149,7 @@ RUN cd /usr/local/torch && torch-activate && \
     # /usr/local/torch/install/bin/luarocks install lua-cjson
     # /usr/local/torch/install/bin/luarocks install uuid
 
-RUN echo "#!/bin/bash\nexport PATH=\$PATH:/usr/local/torch/install/bin\n/usr/local/torch/install/bin/torch-activate" > /etc/profile.d/torch.sh && \
+RUN echo "#!/bin/bash\nexport PATH=\$PATH:/usr/local/torch:/usr/local/torch/install/bin\n/usr/local/torch/install/bin/torch-activate" > /etc/profile.d/torch.sh && \
     chmod u+x /etc/profile.d/torch.sh
 
 RUN cd /usr/local/torch && git clone https://github.com/facebook/iTorch.git
@@ -152,15 +158,109 @@ RUN cd /usr/local/torch/iTorch && torch-activate && \
     env "PATH=$PATH" /usr/local/torch/install/bin/luarocks make
 ## END torch
 
-## Install tensorflow
-RUN echo "#!/bin/bash\nsource activate py2\npip install --upgrade https://storage.googleapis.com/tensorflow/linux/cpu/tensorflow-0.6.0-cp27-none-linux_x86_64.whl --ignore-installed\necho \"Installed\"" > /tmp/setupTensorflow.sh && \
-chmod u+x /tmp/setupTensorflow.sh
-RUN /tmp/setupTensorflow.sh
+# [ Chainer ]
 
+RUN apt-get install -y \
+  ccache \
+  curl \
+  g++ \
+  gfortran \
+  git \
+  libhdf5-dev
+ENV PATH /usr/lib/ccache:$PATH
+RUN apt-get install -y \
+  python-pip \
+  python-dev
+# RUN pip install numpy==1.10.2 # more recent version already installed above
+RUN pip install chainer
+
+# [ gensim, sklearn ]
+
+RUN pip install \
+  gensim \
+  sklearn \
+  skflow \
+  ipython jupyter ipyparallel \
+  Cython \
+  numpy scipy h5py \
+  scikit-image scikit-learn \
+  pandas matplotlib seaborn
+
+# [ TensorFlow ]
+
+RUN apt-get update && apt-get install -y \
+  curl \
+  libfreetype6-dev \
+  libpng12-dev \
+  libzmq3-dev \
+  pkg-config \
+  python-numpy \
+  python-pip \
+  python-scipy
+
+RUN pip install \
+  https://storage.googleapis.com/tensorflow/linux/cpu/tensorflow-0.6.0-cp27-none-linux_x86_64.whl
+
+# [ IPython / Jupyter]
+
+RUN pip install \
+  pexpect \
+  simplegeneric \
+  jupyter
+
+ADD setup/jupyter/python2 /tmp/jupyter/python2
+RUN jupyter kernelspec install /tmp/jupyter
+# [ Prepare the matplotlib font cache ]
+
+# RUN python -c "import matplotlib.pyplot"
+
+# [ MxNet ]
+# Clone MXNet repo and move into it
+RUN cd /usr/local/src && git clone --recursive https://github.com/dmlc/mxnet && cd mxnet && \
+# Copy config.mk
+  cp make/config.mk config.mk && \
+# Set OpenBLAS
+  sed -i 's/USE_BLAS = atlas/USE_BLAS = openblas/g' config.mk && \
+# Set CUDA flag
+  sed -i 's/USE_CUDA = 0/USE_CUDA = 1/g' config.mk && \
+  sed -i 's/USE_CUDA_PATH = NONE/USE_CUDA_PATH = \/usr\/local\/cuda/g' config.mk && \
+# Set cuDNN flag
+# TODO: Change when cuDNN v4 supported
+  sed -i 's/USE_CUDNN = 0/USE_CUDNN = 0/g' config.mk && \
+# Make 
+  make -j"$(nproc)"
+
+RUN cd /usr/local/src/mxnet/python && python setup.py install
+# Add R to apt sources
+RUN echo "deb http://cran.rstudio.com/bin/linux/ubuntu trusty/" >> /etc/apt/sources.list
+# Install latest version of R
+RUN apt-get update && apt-get install -y --force-yes r-base
+
+# [ pyOSC ]
+
+# the version on pip is older than this version on GitHub
+RUN pip install git+git://github.com/ptone/pyosc.git
+
+ADD setup/install_opencv.sh /tmp/install_opencv.sh
+RUN curl -sf -o /usr/local/src/ffmpeg-snapshot.tar.bz2 -L http://ffmpeg.org/releases/ffmpeg-snapshot.tar.bz2
+RUN /tmp/install_opencv.sh
+
+ADD system-conf /
+RUN chown -R root:root /etc/sudoers.d && \
+    chmod 0440 /etc/sudoers.d/*
+
+RUN apt-get clean autoclean
+RUN apt-get autoremove -y
+RUN rm -rf /var/lib/apt/lists/*
+
+# Cleanup
 EXPOSE 8888
 
 VOLUME /home/compute
 VOLUME /home/compute/notebooks
+
+ENV USER_GID compute-users
+RUN addgroup $USER_GID
 
 ADD entry.sh /opt/compute-container/entry.sh
 RUN chmod u+x /opt/compute-container/entry.sh
