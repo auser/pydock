@@ -1,5 +1,6 @@
 # Start with Ubuntu base image
-FROM ubuntu:14.04
+# FROM ubuntu:14.04
+FROM kaixhin/cuda:latest
 
 # Only do this once at the beginning
 
@@ -52,7 +53,7 @@ RUN apt-get install -y \
   build-essential \
   git \
   python-dev \
-  libopenblas-dev \ # this causes an error with Theano afaict
+  libopenblas-dev \ 
   python-pip \
   python-nose \
   python-numpy \
